@@ -3,11 +3,7 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -21,46 +17,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/utils/*": [
-        "./src/utils/*"
-      ],
-      "@/components/*": [
-        "./src/components/*"
-      ],
-      "@/layouts/*": [
-        "./src/layouts/*"
-      ],
-      "@/hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@/assets/*": [
-        "./src/assets/*"
-      ],
-      "@/pages/*": [
-        "./src/pages/*"
-      ],
-      "@/routes/*": [
-        "./src/routes/*"
-      ],
-      "@/store/*": [
-        "./src/store/*"
-      ],
-      "@shared/utils/*": [
-        "../../packages/utils/src/*"
-      ],
-      "@shared/types/*": [
-        "../../packages/types/src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "src"
-  ],
+  "include": ["src"],
   "extends": "../../tsconfig.base.json",
   "references": [
     {

@@ -7,15 +7,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@shared/utils/*": [
-        "packages/utils/src/*"
-      ],
-      "@shared/types/*": [
-        "packages/types/src/*"
-      ]
-    },
     "composite": true
   },
   "references": [

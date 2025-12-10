@@ -6,43 +6,11 @@
     "rootDir": "src",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@/controllers/*": [
-        "src/controllers/*"
-      ],
-      "@/services/*": [
-        "src/services/*"
-      ],
-      "@/middlewares/*": [
-        "src/middlewares/*"
-      ],
-      "@/routes/*": [
-        "src/routes/*"
-      ],
-      "@/utils/*": [
-        "src/utils/*"
-      ],
-      "@/config/*": [
-        "src/config/*"
-      ],
-      "@/models/*": [
-        "src/models/*"
-      ],
-      "@shared/types/*": [
-        "../../packages/types/src/*"
-      ],
-      "@shared/utils/*": [
-        "../../packages/utils/src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": ["src/**/*"],
   "references": [
     {
       "path": "../../packages/types"
