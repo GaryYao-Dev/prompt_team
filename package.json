@@ -1,0 +1,28 @@
+{
+  "name": "test2",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"{apps/*}\" dev",
+    "build:types": "pnpm --filter @shared/types build",
+    "build:utils": "pnpm --filter @shared/utils build",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@shared/types": "workspace:*",
+    "@shared/utils": "workspace:*",
+    "@types/lodash": "^4.17.21",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "eslint": "^9.39.1",
+    "prettier": "^3.7.4",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.49.0"
+  }
+}
