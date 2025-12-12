@@ -1,0 +1,117 @@
+{
+  "products": [
+    {
+      "id": "APE-tshirt-2",
+      "name": "APE 2025 Summer New Cartoon T-shirt",
+      "description": "Ape head with cartoon pattern graphic t-shirts, casual and versatile, couples matching outfits, personalised and comfortable",
+      "price": 14.88,
+      "originalPrice": 29.99,
+      "discount": "50% OFF",
+      "category": "t-shirts",
+      "tags": [
+        "ape",
+        "cartoon",
+        "summer",
+        "couples",
+        "casual"
+      ],
+      "imageUrl": "https://www.modafitclub.com/image/cache/catalog/APE/00002/1-500x500.jpg",
+      "productUrl": "https://www.modafitclub.com/APE-tshirt-2.html"
+    },
+    {
+      "id": "APE-sweatshirt-b6",
+      "name": "APE Fashion New Hoodie",
+      "description": "Round neck design, Classic ape head print, Relaxed fit for comfort, Windproof and warm, Couple styles",
+      "price": 24.89,
+      "category": "hoodies",
+      "tags": [
+        "ape",
+        "hoodie",
+        "couples",
+        "winter",
+        "casual"
+      ],
+      "imageUrl": "https://www.modafitclub.com/image/cache/catalog/APE%E8%BF%9E%E5%B8%BD%E8%A1%AB/APE%E5%9C%86%E9%A2%86/006/0ZXLTK202116OBKX-pdp-1_%E5%89%AF%E6%9C%AC_%E5%89%AF%E6%9C%AC-500x500.jpg",
+      "productUrl": "https://www.modafitclub.com/APE-sweatshirt-b6.html"
+    },
+    {
+      "id": "christmas-pajama-set",
+      "name": "2025 New Christmas Reindeer Family Matching Pajama Set",
+      "description": "Digital Print Long-Sleeve Pajama Set for Homewear, Family Matching design, Perfect for holidays",
+      "price": 90.00,
+      "category": "loungewear",
+      "tags": [
+        "christmas",
+        "family",
+        "pajamas",
+        "matching",
+        "holiday"
+      ],
+      "imageUrl": "https://www.modafitclub.com/image/cache/catalog/Lounge-Set/00001/O1CN01G24dPK239bTVEnkeP_!!2210403057213-0-cib-500x500.jpg",
+      "productUrl": "https://www.modafitclub.com/2025-New-Christmas-Reindeer-Family-Matching-Digital-Print-Long-Sleeve-Pajama-Set-for-Homewear"
+    },
+    {
+      "id": "amiri-y2k-tshirt",
+      "name": "AMIRI Y2K Vintage Streetwear Oversized Graphic Tee",
+      "description": "Cartoon Ape Head Print, 100% Cotton Soft Breathable, Loose Fit Hip Hop Cool Funny Trendy Casual Summer Outfits, Unisex Couple Matching Tops",
+      "price": 14.88,
+      "category": "t-shirts",
+      "tags": [
+        "ape",
+        "y2k",
+        "vintage",
+        "streetwear",
+        "summer",
+        "couples",
+        "hip-hop"
+      ],
+      "imageUrl": "https://www.modafitclub.com/image/cache/catalog/1752834957b856c2b6c5bd2529949257425a8c46d9_square-500x500.jpg",
+      "productUrl": "https://www.modafitclub.com/index.php?route=product/product&product_id=58"
+    },
+    {
+      "id": "balenciaga-sweatshirt",
+      "name": "BALENClAGA Fall Crewneck Sweatshirt",
+      "description": "Minimalist Letter Print, Fleece-Lined for Warmth, Versatile Casual Style",
+      "price": 24.88,
+      "category": "hoodies",
+      "tags": [
+        "balenciaga",
+        "sweatshirt",
+        "winter",
+        "minimalist",
+        "casual"
+      ],
+      "imageUrl": "https://www.modafitclub.com/image/cache/catalog/balishijia/00022/tyvyuggui-500x500.jpg",
+      "productUrl": "https://www.modafitclub.com/BLSJ-CrewneckSweatshirt-22.html"
+    },
+    {
+      "id": "essentials-hoodie",
+      "name": "Essentials Autumn Winter Hoodie 'Black'",
+      "description": "Loose Drop Shoulder Hooded Women/Men Sweatshirt, Vintage Flocking Craftsmanship Combined With Modern Breathable Technology, Stylish And Versatile",
+      "price": 29.89,
+      "category": "hoodies",
+      "tags": [
+        "essentials",
+        "hoodie",
+        "winter",
+        "unisex",
+        "vintage",
+        "casual"
+      ],
+      "imageUrl": "https://www.modafitclub.com/image/cache/catalog/ESS%E5%8D%AB%E8%A1%A3/O1CN01To2dIz1VihARwYJiD_!!2217645522687-0-cib_%E5%89%AF%E6%9C%AC-500x500.jpg",
+      "productUrl": "https://www.modafitclub.com/index.php?route=product/product&product_id=83"
+    }
+  ],
+  "categories": [
+    "t-shirts",
+    "hoodies",
+    "loungewear",
+    "pants",
+    "accessories"
+  ],
+  "config": {
+    "baseUrl": "https://www.modafitclub.com",
+    "imageBaseUrl": "https://www.modafitclub.com/image/cache/catalog/products",
+    "logoUrl": "/public/modafitclub_logo.png"
+  }
+}

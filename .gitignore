@@ -6,3 +6,6 @@ dist
 tsconfig.tsbuildinfo
 */.env
 .env
+
+# AI output files
+apps/api/src/services/ai/output
