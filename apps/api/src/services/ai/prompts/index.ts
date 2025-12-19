@@ -58,9 +58,9 @@ Writing requirements:
 
 IMPORTANT NOTES:
 - This email is for customers who recently purchased a product
-- You may promote BOTH the similar products AND the purchased product
-- If the purchased product has a current discount, highlight it for repurchase
-- Focus mainly on the similar products, but include purchased product if there's a good deal
+- ONLY promote the SIMILAR PRODUCTS provided, NOT the purchased product
+- The purchased product is for CONTEXT only (to understand customer preference)
+- NEVER add standalone price lines like "Shop the [Product] — $XX.XX" without a full product card
 
 STRICT FORMAT RULES:
 - EVERY product in subject must be in body with correct price and Shop Now link
@@ -95,9 +95,9 @@ Writing requirements:
 
 IMPORTANT NOTES:
 - This email is for customers who recently purchased a product
-- You may promote BOTH the similar products AND the purchased product
-- If the purchased product has a current discount, highlight it for repurchase
-- Focus mainly on the similar products, but include purchased product if there's a good deal
+- ONLY promote the SIMILAR PRODUCTS provided, NOT the purchased product
+- The purchased product is for CONTEXT only (to understand customer preference)
+- NEVER add standalone price lines like "Shop the [Product] — $XX.XX" without a full product card
 
 STRICT FORMAT RULES:
 - EVERY product in subject must be in body with correct price and Shop Now link

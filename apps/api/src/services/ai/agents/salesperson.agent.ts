@@ -118,6 +118,8 @@ IMPORTANT REQUIREMENTS:
    - COPY THE PRICE LINE EXACTLY as provided in the product data (do NOT modify prices)
 4. Keep the layout clean and scannable
 5. CRITICAL: Use the exact prices provided - DO NOT shorten or round them
+6. NEVER include standalone lines like "Shop the [Product] — $XX.XX" without a full product card
+7. Do NOT promote or link to the purchased product - it is for context only
 
 Please output in JSON format:
 \`\`\`json

@@ -1,10 +1,21 @@
 /**
- * Email Sending Tool (Mock)
- * Simulates sending promotional emails
+ * Email Sending Tool
+ * Uses Nodemailer for real SMTP email delivery
+ * Sends HTML-only emails to ensure proper rendering in Gmail
  */
 
 import { tool } from '@langchain/core/tools'
 import { z } from 'zod'
+import nodemailer from 'nodemailer'
+import type { Transporter } from 'nodemailer'
+import {
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_SECURE,
+  SMTP_USER,
+  SMTP_PASS,
+  EMAIL_FROM,
+} from '@/config/env'
 
 export interface EmailSendResult {
   success: boolean
@@ -14,29 +25,97 @@ export interface EmailSendResult {
   htmlPreview: string
 }
 
+// Lazy-initialized transporter (created on first use)
+let transporter: Transporter | null = null
+
 /**
- * Mock email sending function
- * In production, integrate with email service (SendGrid, AWS SES, etc.)
+ * Get or create the nodemailer transporter
+ * Validates SMTP configuration before creating
+ */
+function getTransporter(): Transporter {
+  if (transporter) {
+    return transporter
+  }
+
+  if (!SMTP_USER || !SMTP_PASS) {
+    throw new Error(
+      'SMTP credentials not configured. Set SMTP_USER and SMTP_PASS environment variables.'
+    )
+  }
+
+  transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  })
+
+  console.log(`[Email] Transporter created for ${SMTP_HOST}:${SMTP_PORT}`)
+  return transporter
+}
+
+/**
+ * Send promotional emails using Nodemailer
+ * Sends HTML-only emails (no multipart/alternative) for best Gmail compatibility
  */
 async function sendEmails(
   emails: string[],
   subject: string,
   htmlContent: string
 ): Promise<EmailSendResult> {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 100))
+  const sentEmails: string[] = []
+  const failedEmails: string[] = []
 
-  // Mock: randomly fail some emails for realism
-  const failedEmails = emails.filter(() => Math.random() < 0.05)
-  const sentCount = emails.length - failedEmails.length
+  console.log(`[Email] Sending to ${emails.length} recipients...`)
+  console.log(`[Email] Subject: ${subject}`)
 
-  console.log(`[Mock Email] Sending to ${emails.length} recipients`)
-  console.log(`[Mock Email] Subject: ${subject}`)
-  console.log(`[Mock Email] Sent: ${sentCount}, Failed: ${failedEmails.length}`)
+  try {
+    const transport = getTransporter()
+
+    for (const email of emails) {
+      try {
+        const info = await transport.sendMail({
+          from: EMAIL_FROM,
+          to: email,
+          subject: subject,
+          html: htmlContent, // HTML only - no text version to avoid multipart/alternative issues
+        })
+
+        console.log(`[Email] Sent to ${email}: ${info.messageId}`)
+        sentEmails.push(email)
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error'
+        console.error(`[Email] Failed to send to ${email}: ${errorMessage}`)
+        failedEmails.push(email)
+      }
+    }
+  } catch (error) {
+    // If transporter creation failed, all emails fail
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error'
+    console.error(`[Email] Transporter error: ${errorMessage}`)
+    return {
+      success: false,
+      sentCount: 0,
+      failedEmails: emails,
+      timestamp: new Date().toISOString(),
+      htmlPreview: `Error: ${errorMessage}`,
+    }
+  }
+
+  const success = failedEmails.length === 0
+
+  console.log(
+    `[Email] Complete: ${sentEmails.length} sent, ${failedEmails.length} failed`
+  )
 
   return {
-    success: failedEmails.length === 0,
-    sentCount,
+    success,
+    sentCount: sentEmails.length,
     failedEmails,
     timestamp: new Date().toISOString(),
     htmlPreview: htmlContent.substring(0, 500) + '...',
@@ -54,7 +133,7 @@ export const sendEmailTool = tool(
   {
     name: 'send_promotion_email',
     description:
-      'Send promotional HTML emails to a list of customer email addresses (mock)',
+      'Send promotional HTML emails to a list of customer email addresses via SMTP',
     schema: z.object({
       emails: z.array(z.string()).describe('List of recipient email addresses'),
       subject: z.string().describe('Email subject line'),

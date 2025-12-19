@@ -131,26 +131,15 @@ function createEmailTemplate(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
   <style>
-    /* ModaFitClub Brand Colors */
-    :root {
-      --primary-dark: #171016;
-      --primary-light: #ffffff;
-      --accent-color: #cbad62;
-      --text-color: #333333;
-      --text-muted: #666666;
-      --border-color: #e5e5e5;
-      --bg-light: #f8f8f8;
-    }
-    
+    /* ModaFitClub Brand Colors - Hardcoded for email client compatibility */
     body {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       line-height: 1.7;
-      color: var(--text-color);
+      color: #333333;
       max-width: 600px;
       margin: 0 auto;
       padding: 0;
-      background-color: var(--bg-light);
-      -webkit-font-smoothing: antialiased;
+      background-color: #f8f8f8;
     }
     
     .email-wrapper {
@@ -158,31 +147,31 @@ function createEmailTemplate(
     }
     
     .email-container {
-      background-color: var(--primary-light);
+      background-color: #ffffff;
       border-radius: 0;
       padding: 40px;
       box-shadow: none;
-      border: 1px solid var(--border-color);
+      border: 1px solid #e5e5e5;
     }
     
     .logo {
       text-align: center;
       margin-bottom: 30px;
       padding-bottom: 20px;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid #e5e5e5;
     }
     
     .logo-text {
       font-size: 24px;
       font-weight: 700;
-      color: var(--primary-dark);
+      color: #171016;
       text-transform: uppercase;
       letter-spacing: 3px;
       margin: 0;
     }
     
     h1 {
-      color: var(--primary-dark);
+      color: #171016;
       font-size: 22px;
       font-weight: 600;
       margin: 0 0 25px 0;
@@ -190,36 +179,36 @@ function createEmailTemplate(
     }
     
     h2 {
-      color: var(--primary-dark);
+      color: #171016;
       font-size: 18px;
       font-weight: 600;
       margin: 25px 0 15px 0;
     }
     
     h3 {
-      color: var(--primary-dark);
+      color: #171016;
       font-size: 16px;
       font-weight: 600;
       margin: 20px 0 12px 0;
     }
     
     h4 {
-      color: var(--primary-dark);
+      color: #171016;
       font-size: 15px;
       font-weight: 600;
       margin: 18px 0 10px 0;
-      border-bottom: 2px solid var(--accent-color);
+      border-bottom: 2px solid #cbad62;
       padding-bottom: 8px;
     }
     
     p {
       margin: 0 0 18px 0;
-      color: var(--text-color);
+      color: #333333;
       font-size: 15px;
     }
     
     a {
-      color: var(--primary-dark);
+      color: #171016;
       text-decoration: underline;
     }
     
@@ -233,7 +222,7 @@ function createEmailTemplate(
       max-width: 100%;
       height: auto;
       border-radius: 8px;
-      border: 1px solid var(--border-color);
+      border: 1px solid #e5e5e5;
     }
     
     /* Price Styling - Prominent with accent color */
@@ -241,7 +230,7 @@ function createEmailTemplate(
       display: inline-block;
       font-size: 20px;
       font-weight: 700;
-      color: var(--accent-color);
+      color: #cbad62;
       border-radius: 4px;
       vertical-align: middle;
       text-align: center;
@@ -251,7 +240,7 @@ function createEmailTemplate(
     .original-price {
       display: inline-block;
       text-decoration: line-through;
-      color: var(--text-muted);
+      color: #666666;
       font-size: 14px;
       margin-right: 8px;
       vertical-align: middle;
@@ -271,23 +260,28 @@ function createEmailTemplate(
       text-transform: uppercase;
     }
     
-    /* Price Action Section - Aligned container */
+    /* Price Action Section - Inline-block for email client compatibility */
     .price-action {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
       margin: 15px 0 20px 0;
       padding: 15px;
-      background-color: var(--bg-light);
+      background-color: #f8f8f8;
       border-radius: 8px;
+      text-align: left;
+    }
+    
+    .price-action span,
+    .price-action del,
+    .price-action a {
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
     }
     
     /* Shop Now Button - Inline style matching CTA */
     .shop-now-btn {
       display: inline-block;
-      background-color: var(--accent-color);
-      color: var(--primary-dark) !important;
+      background-color: #cbad62;
+      color: #171016 !important;
       text-decoration: none !important;
       padding: 10px 25px;
       font-size: 13px;
@@ -296,25 +290,20 @@ function createEmailTemplate(
       letter-spacing: 1px;
       border-radius: 4px;
       margin: 0;
-      transition: opacity 0.3s ease;
       vertical-align: middle;
-    }
-    
-    .shop-now-btn:hover {
-      opacity: 0.85;
     }
     
     .cta-section {
       text-align: center;
       margin: 35px 0;
       padding: 25px 0;
-      border-top: 1px solid var(--border-color);
+      border-top: 1px solid #e5e5e5;
     }
     
     .cta-button {
       display: inline-block;
-      background-color: var(--accent-color);
-      color: var(--primary-dark) !important;
+      background-color: #cbad62;
+      color: #171016 !important;
       text-decoration: none;
       padding: 14px 40px;
       font-size: 14px;
@@ -322,36 +311,31 @@ function createEmailTemplate(
       text-transform: uppercase;
       letter-spacing: 1.5px;
       border: none;
-      transition: opacity 0.3s ease;
-    }
-    
-    .cta-button:hover {
-      opacity: 0.85;
     }
     
     .divider {
       height: 1px;
-      background-color: var(--border-color);
+      background-color: #e5e5e5;
       margin: 30px 0;
     }
     
     .footer {
       margin-top: 30px;
       padding-top: 25px;
-      border-top: 1px solid var(--border-color);
+      border-top: 1px solid #e5e5e5;
       font-size: 12px;
-      color: var(--text-muted);
+      color: #666666;
       text-align: center;
     }
     
     .footer a {
-      color: var(--text-muted);
+      color: #666666;
       text-decoration: underline;
     }
     
     .footer p {
       font-size: 12px;
-      color: var(--text-muted);
+      color: #666666;
       margin: 8px 0;
     }
     
@@ -362,18 +346,18 @@ function createEmailTemplate(
     
     li {
       margin: 10px 0;
-      color: var(--text-color);
+      color: #333333;
       font-size: 15px;
     }
     
     strong {
-      color: var(--primary-dark);
+      color: #171016;
       font-weight: 600;
     }
     
-    .original-price {
+    del {
       text-decoration: line-through;
-      color: var(--text-muted);
+      color: #666666;
       font-size: 14px;
     }
   </style>
@@ -390,7 +374,7 @@ function createEmailTemplate(
       ${bodyHtml}
       
       <div class="cta-section">
-        <p style="margin-bottom: 15px; color: var(--text-muted);">Explore our full collection</p>
+        <p style="margin-bottom: 15px; color: #666666;">Explore our full collection</p>
         <a href="${homepageUrl}" class="cta-button">${ctaText}</a>
       </div>
       

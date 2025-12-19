@@ -6,7 +6,10 @@ import {
   RECOMMENDED_PRODUCTS_COUNT,
   type Product,
 } from '../services/ai/tools/database.tool'
+import { sendEmails } from '../services/ai/tools/email.tool'
 import type { ProductInfo } from '../services/ai/agents/types'
+import fs from 'fs'
+import path from 'path'
 
 const router: Router = Router()
 
@@ -142,5 +145,86 @@ router.get('/health', (_req: Request, res: Response): void => {
     timestamp: new Date().toISOString(),
   })
 })
+
+/**
+ * POST /ai/test-send-email
+ * Test endpoint to send an existing HTML file as email
+ *
+ * Request body:
+ * {
+ *   "htmlPath": "APE_Fashion_New_Hoodie_2025-12-16T11-17-37/final_email.html",
+ *   "emails": ["test@example.com"],
+ *   "subject": "Test Email Subject"
+ * }
+ */
+router.post(
+  '/test-send-email',
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { htmlPath, emails, subject } = req.body as {
+        htmlPath: string
+        emails: string[]
+        subject?: string
+      }
+
+      // Validate input
+      if (!htmlPath) {
+        res.status(400).json({
+          error: 'Invalid request: htmlPath is required',
+        })
+        return
+      }
+
+      if (!emails || !Array.isArray(emails) || emails.length === 0) {
+        res.status(400).json({
+          error: 'Invalid request: emails array is required',
+        })
+        return
+      }
+
+      // Build full path to HTML file
+      const outputDir = path.join(__dirname, '../services/ai/output', htmlPath)
+
+      // Check if file exists
+      if (!fs.existsSync(outputDir)) {
+        res.status(404).json({
+          error: `HTML file not found: ${htmlPath}`,
+          searchedPath: outputDir,
+        })
+        return
+      }
+
+      // Read HTML content
+      const htmlContent = fs.readFileSync(outputDir, 'utf-8')
+
+      // Extract subject from HTML title if not provided
+      const emailSubject =
+        subject ||
+        htmlContent.match(/<title>([^<]+)<\/title>/)?.[1] ||
+        'Test Promotional Email'
+
+      // Send email using static import
+      const result = await sendEmails(emails, emailSubject, htmlContent)
+
+      res.json({
+        success: result.success,
+        message: `Sent ${result.sentCount} emails`,
+        data: {
+          htmlPath,
+          subject: emailSubject,
+          sentCount: result.sentCount,
+          failedEmails: result.failedEmails,
+          timestamp: result.timestamp,
+        },
+      })
+    } catch (error) {
+      console.error('[AI Route] Test email error:', error)
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+)
 
 export default router

@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 
 # AI output files
 apps/api/src/services/ai/output
+apps/api/extra
