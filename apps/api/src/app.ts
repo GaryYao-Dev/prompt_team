@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import express from 'express'
 import { API_PREFIX, MONGO_URI, NODE_ENV, PORT } from './config/env'
 import { applyMiddlewares } from './middlewares'

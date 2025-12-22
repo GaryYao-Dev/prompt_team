@@ -480,6 +480,8 @@ export async function htmlFixerNode(
 
 /**
  * Node 5: Manager final approval
+ * CRITICAL: When manager rejects for content revision, must set needsRevision
+ * so salespeople will regenerate their drafts with manager's feedback
  */
 export async function managerReviewNode(
   state: PromotionTeamState
@@ -502,8 +504,26 @@ export async function managerReviewNode(
     review.approved ? 'APPROVED' : 'REJECTED'
   )
 
+  // CRITICAL FIX: When manager requires content revision, set needsRevision
+  // so salespeople will regenerate their drafts with manager's feedback
+  const needsRevision = review.requiresContentRevision
+    ? { salesperson1: true, salesperson2: true }
+    : state.needsRevision
+
+  // Store manager feedback in evaluationResult so salespeople can access it
+  const updatedEvaluationResult =
+    review.requiresContentRevision && state.evaluationResult
+      ? {
+          ...state.evaluationResult,
+          approved: state.evaluationResult.approved, // Preserve the boolean type
+          feedback: review.feedback, // Manager's rejection reason becomes the revision feedback
+        }
+      : state.evaluationResult
+
   return {
     managerReview: review,
+    evaluationResult: updatedEvaluationResult,
+    needsRevision,
     currentPhase: review.approved
       ? WorkflowPhase.SENDING
       : WorkflowPhase.EVALUATION,

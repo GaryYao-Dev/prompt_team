@@ -1,3 +1,9 @@
+import path from 'path'
+import { config as loadEnv } from 'dotenv'
+
+// Ensure .env is loaded from the api app root, even if process cwd is different
+loadEnv({ path: path.resolve(__dirname, '../../.env') })
+
 export const PORT = process.env.API_PORT || 8001
 export const NODE_ENV = process.env.NODE_ENV || 'development'
 export const API_PREFIX = process.env.API_PREFIX || '/api'
@@ -13,3 +19,6 @@ export const SMTP_USER = process.env.SMTP_USER || ''
 export const SMTP_PASS = process.env.SMTP_PASS || ''
 export const EMAIL_FROM =
   process.env.EMAIL_FROM || 'ModaFitClub <noreply@modafitclub.com>'
+
+// Resend Email Service Configuration
+export const RESEND_API_KEY = process.env.RESEND_API_KEY || ''

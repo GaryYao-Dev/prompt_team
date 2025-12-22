@@ -1,21 +1,13 @@
 /**
  * Email Sending Tool
- * Uses Nodemailer for real SMTP email delivery
- * Sends HTML-only emails to ensure proper rendering in Gmail
+ * Uses Resend SDK for email delivery
+ * Sends HTML-only emails to ensure proper rendering
  */
 
 import { tool } from '@langchain/core/tools'
 import { z } from 'zod'
-import nodemailer from 'nodemailer'
-import type { Transporter } from 'nodemailer'
-import {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_SECURE,
-  SMTP_USER,
-  SMTP_PASS,
-  EMAIL_FROM,
-} from '@/config/env'
+import { Resend } from 'resend'
+import { RESEND_API_KEY, EMAIL_FROM } from '@/config/env'
 
 export interface EmailSendResult {
   success: boolean
@@ -23,43 +15,30 @@ export interface EmailSendResult {
   failedEmails: string[]
   timestamp: string
   htmlPreview: string
+  providerResponses?: Array<{ email: string; id?: string; error?: string }>
 }
 
-// Lazy-initialized transporter (created on first use)
-let transporter: Transporter | null = null
+// Initialize Resend client
+const resend = new Resend(RESEND_API_KEY)
 
 /**
- * Get or create the nodemailer transporter
- * Validates SMTP configuration before creating
+ * Validate Resend API configuration
  */
-function getTransporter(): Transporter {
-  if (transporter) {
-    return transporter
-  }
-
-  if (!SMTP_USER || !SMTP_PASS) {
+function validateResendConfig(): void {
+  if (!RESEND_API_KEY) {
     throw new Error(
-      'SMTP credentials not configured. Set SMTP_USER and SMTP_PASS environment variables.'
+      'Resend API key not configured. Set RESEND_API_KEY environment variable.'
     )
   }
-
-  transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_SECURE,
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
-    },
-  })
-
-  console.log(`[Email] Transporter created for ${SMTP_HOST}:${SMTP_PORT}`)
-  return transporter
 }
 
+// Batch size limit for Resend API
+const BATCH_SIZE = 100
+
 /**
- * Send promotional emails using Nodemailer
- * Sends HTML-only emails (no multipart/alternative) for best Gmail compatibility
+ * Send promotional emails using Resend SDK Batch API
+ * Each recipient only sees themselves - emails are sent individually
+ * Supports up to 100 emails per batch request
  */
 async function sendEmails(
   emails: string[],
@@ -68,36 +47,80 @@ async function sendEmails(
 ): Promise<EmailSendResult> {
   const sentEmails: string[] = []
   const failedEmails: string[] = []
+  const providerResponses: Array<{
+    email: string
+    id?: string
+    error?: string
+  }> = []
 
-  console.log(`[Email] Sending to ${emails.length} recipients...`)
+  console.log(
+    `[Email] Sending to ${emails.length} recipients via Resend Batch API...`
+  )
   console.log(`[Email] Subject: ${subject}`)
 
   try {
-    const transport = getTransporter()
+    validateResendConfig()
 
-    for (const email of emails) {
+    // Split emails into batches of BATCH_SIZE
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const batch = emails.slice(i, i + BATCH_SIZE)
+      const batchNumber = Math.floor(i / BATCH_SIZE) + 1
+      const totalBatches = Math.ceil(emails.length / BATCH_SIZE)
+
+      console.log(
+        `[Email] Sending batch ${batchNumber}/${totalBatches} (${batch.length} emails)...`
+      )
+
+      // Create individual email objects for each recipient
+      const emailPayloads = batch.map((email) => ({
+        from: EMAIL_FROM,
+        to: [email],
+        subject: subject,
+        html: htmlContent,
+      }))
+
       try {
-        const info = await transport.sendMail({
-          from: EMAIL_FROM,
-          to: email,
-          subject: subject,
-          html: htmlContent, // HTML only - no text version to avoid multipart/alternative issues
-        })
+        const { data, error } = await resend.batch.send(emailPayloads)
 
-        console.log(`[Email] Sent to ${email}: ${info.messageId}`)
-        sentEmails.push(email)
+        if (error) {
+          // Batch-level error - all emails in this batch failed
+          console.error(`[Email] Batch ${batchNumber} failed: ${error.message}`)
+          for (const email of batch) {
+            providerResponses.push({ email, error: error.message })
+            failedEmails.push(email)
+          }
+        } else if (data) {
+          // Process individual results from batch response
+          data.data.forEach((result, index) => {
+            const email = batch[index]
+            if (result.id) {
+              console.log(`[Email] Sent to ${email}: ${result.id}`)
+              providerResponses.push({ email, id: result.id })
+              sentEmails.push(email)
+            } else {
+              console.error(
+                `[Email] Failed to send to ${email}: No ID returned`
+              )
+              providerResponses.push({ email, error: 'No ID returned' })
+              failedEmails.push(email)
+            }
+          })
+        }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error'
-        console.error(`[Email] Failed to send to ${email}: ${errorMessage}`)
-        failedEmails.push(email)
+        console.error(`[Email] Batch ${batchNumber} error: ${errorMessage}`)
+        for (const email of batch) {
+          providerResponses.push({ email, error: errorMessage })
+          failedEmails.push(email)
+        }
       }
     }
   } catch (error) {
-    // If transporter creation failed, all emails fail
+    // If validation or config failed, all emails fail
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error'
-    console.error(`[Email] Transporter error: ${errorMessage}`)
+    console.error(`[Email] Resend API error: ${errorMessage}`)
     return {
       success: false,
       sentCount: 0,
@@ -119,6 +142,7 @@ async function sendEmails(
     failedEmails,
     timestamp: new Date().toISOString(),
     htmlPreview: htmlContent.substring(0, 500) + '...',
+    providerResponses,
   }
 }
 
