@@ -123,6 +123,11 @@ IMPORTANT REQUIREMENTS:
 2. Include ALL ${similarProducts.length} recommended products in the email
 3. Do NOT promote or link to the purchased product - it is for context only
 4. Generate content that fits the JSON structure below
+5. CRITICAL: For product prices, copy the exact values from the input data:
+   - "price" is REQUIRED - use the Current Price from input
+   - "originalPrice" is OPTIONAL - ONLY include if the product has a discount (Original Price > Current Price)
+   - "discount" is OPTIONAL - ONLY include if the product has a discount percentage listed in the input
+   - Do NOT invent discounts or original prices. If no discount exists in the input, OMIT these fields entirely.
 
 Please output in JSON format:
 \`\`\`json
@@ -137,9 +142,16 @@ Please output in JSON format:
         "description": "Persuasive description for this product (2-3 sentences)",
         "imageUrl": "Product Image URL (copy exactly from input)",
         "productUrl": "Product URL (copy exactly from input)",
-        "price": 123.45,
-        "originalPrice": 150.00,
-        "discount": "20% OFF"
+        "price": 29.89
+      },
+      {
+        "name": "Discounted Product Name",
+        "description": "Description for discounted product",
+        "imageUrl": "URL",
+        "productUrl": "URL",
+        "price": 14.88,
+        "originalPrice": 29.99,
+        "discount": "50% OFF"
       }
     ],
     "outro": "Closing paragraph",

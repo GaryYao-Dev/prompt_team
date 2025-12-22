@@ -7,7 +7,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 // Configurable: Number of similar products to recommend
-export const RECOMMENDED_PRODUCTS_COUNT = 2
+export const RECOMMENDED_PRODUCTS_COUNT = 3
 
 // Product interface matching the JSON structure
 export interface Product {

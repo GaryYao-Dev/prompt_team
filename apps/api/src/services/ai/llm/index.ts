@@ -5,12 +5,10 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models'
 
 // Supported Models
 export const OPENAI_MODELS = [
-  'gpt-4o',
   'gpt-4o-mini',
-  'gpt-4',
-  'gpt-3.5-turbo',
   'gpt-5-mini',
-  'gpt-5.1-2025-11-13',
+  'gpt-5.1',
+  'gpt-5-nano',
 ] as const
 export type OpenAIModel = (typeof OPENAI_MODELS)[number]
 
