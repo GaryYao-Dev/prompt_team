@@ -7,6 +7,7 @@
 import { tool } from '@langchain/core/tools'
 import { z } from 'zod'
 import { marked } from 'marked'
+import type { EmailTemplateData } from '../agents/types'
 
 // Configure marked for our use case
 marked.setOptions({
@@ -109,15 +110,71 @@ function convertMarkdownToHtml(markdown: string): string {
 }
 
 /**
- * Create HTML email template styled to match ModaFitClub website
- * - Clean, minimalist design
- * - White background with dark text
- * - Modern e-commerce aesthetic
- * - Product card styling for recommendations
+ * Render HTML email from structured data
+ * Uses the consistent premium styling
  */
-function createEmailTemplate(
-  subject: string,
-  bodyHtml: string,
+export function renderEmailTemplate(data: EmailTemplateData): string {
+  const { headline, introduction, products, outro, ctaText, ctaUrl } = data
+
+  const productCardsHtml = products
+    .map((product) => {
+      // Logic for price display
+      let priceDisplay = ''
+
+      if (product.originalPrice && product.discount) {
+        // Discounted with badge
+        priceDisplay = `
+         <div class="price-action">
+           <del class="original-price">$${product.originalPrice.toFixed(2)}</del>
+           <span class="price">$${product.price.toFixed(2)}</span>
+           <span class="discount-badge">${product.discount}</span>
+           <a href="${product.productUrl}" class="shop-now-btn">Shop Now</a>
+         </div>`
+      } else if (product.originalPrice) {
+        // Discounted without specific badge text
+        priceDisplay = `
+         <div class="price-action">
+           <del class="original-price">$${product.originalPrice.toFixed(2)}</del>
+           <span class="price">$${product.price.toFixed(2)}</span>
+           <a href="${product.productUrl}" class="shop-now-btn">Shop Now</a>
+         </div>`
+      } else {
+        // Regular price
+        priceDisplay = `
+        <div class="price-action">
+          <span class="price">$${product.price.toFixed(2)}</span>
+          <a href="${product.productUrl}" class="shop-now-btn">Shop Now</a>
+        </div>`
+      }
+
+      return `
+      <h3 class="product-title">${product.name}</h3>
+      <p>${product.description}</p>
+      <div class="product-image"><img src="${product.imageUrl}" alt="${product.name}"></div>
+      ${priceDisplay}
+      `
+    })
+    .join('\n')
+
+  const fullBodyHtml = `
+    <h1>${headline}</h1>
+    <p>${introduction}</p>
+    
+    ${productCardsHtml}
+    
+    <p>${outro}</p>
+  `
+
+  // Use the same wrapper as before
+  return createBaseEmailLayout(data.headline, fullBodyHtml, ctaUrl, ctaText)
+}
+
+/**
+ * Shared HTML layout wrapper
+ */
+function createBaseEmailLayout(
+  title: string,
+  contentHtml: string,
   ctaUrl: string,
   ctaText: string = 'Shop Now'
 ): string {
@@ -129,7 +186,7 @@ function createEmailTemplate(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${title}</title>
   <style>
     /* ModaFitClub Brand Colors - Hardcoded for email client compatibility */
     body {
@@ -266,7 +323,7 @@ function createEmailTemplate(
       padding: 15px;
       background-color: #f8f8f8;
       border-radius: 8px;
-      text-align: left;
+      text-align: center;
     }
     
     .price-action span,
@@ -369,13 +426,11 @@ function createEmailTemplate(
         <p class="logo-text">ModaFitClub</p>
       </div>
       
-      <h1>${subject}</h1>
-      
-      ${bodyHtml}
+      ${contentHtml}
       
       <div class="cta-section">
         <p style="margin-bottom: 15px; color: #666666;">Explore our full collection</p>
-        <a href="${homepageUrl}" class="cta-button">${ctaText}</a>
+        <a href="${homepageUrl}" class="cta-button">View More</a>
       </div>
       
       <div class="footer">
@@ -395,18 +450,24 @@ function createEmailTemplate(
 /**
  * Markdown to HTML tool for LangGraph
  */
-export const markdownToHtmlTool = tool(
+/**
+ * Email Template tool for LangGraph
+ */
+export const emailTemplateTool = tool(
   async ({ markdown, subject, ctaUrl, ctaText }) => {
     const bodyHtml = convertMarkdownToHtml(markdown)
-    const fullHtml = createEmailTemplate(subject, bodyHtml, ctaUrl, ctaText)
+    const fullHtml = createBaseEmailLayout(subject, bodyHtml, ctaUrl, ctaText)
     return fullHtml
   },
   {
-    name: 'markdown_to_html',
-    description:
-      'Convert Markdown email content to a styled HTML email template',
+    name: 'email_template_tool',
+    description: 'Convert content to a styled HTML email template',
     schema: z.object({
-      markdown: z.string().describe('Markdown content to convert'),
+      markdown: z
+        .string()
+        .describe(
+          'Markdown content to convert (optional if using structured data)'
+        ),
       subject: z.string().describe('Email subject line'),
       ctaUrl: z.string().describe('URL for the call-to-action button'),
       ctaText: z
@@ -418,4 +479,5 @@ export const markdownToHtmlTool = tool(
 )
 
 // Export the pure functions for direct use
-export { convertMarkdownToHtml, createEmailTemplate }
+// Export the pure functions for direct use
+export { convertMarkdownToHtml, createBaseEmailLayout as createEmailTemplate }

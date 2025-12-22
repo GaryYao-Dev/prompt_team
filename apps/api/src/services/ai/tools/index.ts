@@ -5,10 +5,11 @@
 
 // Promotion team tools
 export {
-  markdownToHtmlTool,
+  emailTemplateTool,
+  renderEmailTemplate,
   convertMarkdownToHtml,
   createEmailTemplate,
-} from './markdown.tool'
+} from './email-template.tool'
 export { sendEmailTool, sendEmails, type EmailSendResult } from './email.tool'
 export {
   getProductByUrl,

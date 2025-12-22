@@ -17,7 +17,7 @@ import { EVALUATOR_PROMPT } from '../prompts'
 import {
   convertMarkdownToHtml,
   createEmailTemplate,
-} from '../tools/markdown.tool'
+} from '../tools/email-template.tool'
 
 /**
  * Evaluation criteria with weights
@@ -56,18 +56,36 @@ export class EvaluatorAgent extends BaseAgent {
 
   /**
    * Generate HTML from the selected draft
-   * Uses the markdown to HTML conversion tool
+   * Uses the template rendering tool
    */
   async generateHtml(draft: EmailDraft, product: ProductInfo): Promise<string> {
-    console.log('[Evaluator] Generating HTML from draft...')
-    const bodyHtml = convertMarkdownToHtml(draft.bodyMarkdown)
+    console.log('[Evaluator] Generating HTML from draft using template...')
+
+    // Check if we have structured content (new flow) or markdown (legacy)
+    if (draft.content) {
+      // Use helper to keep logic clean, direct import of renderEmailTemplate
+      const { renderEmailTemplate } = require('../tools/email-template.tool')
+      const fullHtml = renderEmailTemplate(draft.content)
+      console.log(
+        '[Evaluator] HTML generated from template, length:',
+        fullHtml.length
+      )
+      return fullHtml
+    }
+
+    // Fallback for legacy Markdown
+    console.log('[Evaluator] Fallback: Generating HTML from Markdown...')
+    const {
+      convertMarkdownToHtml,
+      createEmailTemplate,
+    } = require('../tools/email-template.tool')
+    const bodyHtml = convertMarkdownToHtml(draft.bodyMarkdown || '')
     const fullHtml = createEmailTemplate(
       draft.subject,
       bodyHtml,
       product.productUrl,
       'Shop Now'
     )
-    console.log('[Evaluator] HTML generated, length:', fullHtml.length)
     return fullHtml
   }
 
@@ -128,14 +146,26 @@ Please return ONLY the fixed HTML, no explanation.`
     product: ProductInfo
   ): Promise<EvaluationResult> {
     const draftsDescription = drafts
-      .map(
-        (draft, index) => `
+      .map((draft, index) => {
+        let contentDisplay = ''
+        if (draft.content) {
+          contentDisplay = `
+Headline: ${draft.content.headline}
+Intro: ${draft.content.introduction}
+Products: ${draft.content.products.map((p) => `[${p.name} - $${p.price}]`).join(', ')}
+Outro: ${draft.content.outro}
+             `
+        } else {
+          contentDisplay = draft.bodyMarkdown || ''
+        }
+
+        return `
 [EMAIL ${index + 1}] (${draft.style} style - ${draft.salespersonId})
 Subject: ${draft.subject}
 Content:
-${draft.bodyMarkdown}
+${contentDisplay}
 `
-      )
+      })
       .join('\n---\n')
 
     const criteriaDescription = Object.entries(EVALUATION_CRITERIA)
@@ -220,17 +250,11 @@ IMPORTANT: All feedback and optimized content should be in English.`
 
     const selectedDraft = drafts[parsed.selectedDraftIndex] || drafts[0]
 
+    // Always use the original draft with structured content intact
+    // Do NOT use optimizedContent (legacy) as it causes fallback to broken Markdown rendering
     return {
       approved: allApproved,
-      selectedDraft: parsed.optimizedContent
-        ? {
-            ...selectedDraft,
-            subject: parsed.optimizedContent.subject || selectedDraft.subject,
-            bodyMarkdown:
-              parsed.optimizedContent.bodyMarkdown ||
-              selectedDraft.bodyMarkdown,
-          }
-        : selectedDraft,
+      selectedDraft, // Keep structured content for proper HTML template rendering
       draftEvaluations,
       feedback: parsed.overallFeedback,
       issues: allApproved

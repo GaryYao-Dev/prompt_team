@@ -12,7 +12,7 @@ import type { EmailDraft } from '../agents/types'
 import {
   createEmailTemplate,
   convertMarkdownToHtml,
-} from '../tools/markdown.tool'
+} from '../tools/email-template.tool'
 import { saveHtmlToFile, archiveExistingFile } from '../tools/file.tool'
 import { sendEmails } from '../tools/email.tool'
 import { createLLM } from '../llm'
@@ -43,29 +43,26 @@ function createOutputFolder(productName: string): string {
 /**
  * Save an email draft as Markdown file
  */
-function saveDraftAsMarkdown(draft: EmailDraft, outputDir: string): void {
-  const filename = `draft_${draft.salespersonId}_${draft.style}.md`
-  const filepath = path.join(outputDir, filename)
+/**
+ * Save an email draft as Markdown or JSON file
+ */
+function saveDraftAsJson(draft: EmailDraft, outputDir: string): void {
+  const filename = `draft_${draft.salespersonId}_${draft.style}`
 
-  const content = `# ${draft.subject}
+  if (draft.content) {
+    // Save structured content as JSON
+    const jsonPath = path.join(outputDir, `${filename}.json`)
+    fs.writeFileSync(jsonPath, JSON.stringify(draft.content, null, 2), 'utf-8')
+    console.log(`[PromotionTeam] Saved draft JSON: ${jsonPath}`)
 
-**Style:** ${draft.style}
-**Salesperson:** ${draft.salespersonId}
-
----
-
-${draft.bodyMarkdown}
-`
-
-  fs.writeFileSync(filepath, content, 'utf-8')
-  console.log(`[PromotionTeam] Saved draft: ${filepath}`)
+    // [MODIFIED] Markdown generation removed as per user request
+  }
 }
 
 // Create LLM instance (can be configured via environment)
 const llm = createLLM({
   provider: 'openai',
-  model: 'gpt-5-mini',
-  timeout: 1800000,
+  model: 'gpt-4o-mini',
 })
 
 // Create agents
@@ -163,18 +160,25 @@ export async function salesperson1Node(
   )?.feedback
   const feedback = draftFeedback || state.evaluationResult?.feedback
 
+  // Find previous draft if revision is needed
+  const previousDraft = state.emailDrafts
+    .slice()
+    .reverse()
+    .find((d) => d.salespersonId === 'salesperson-rational')
+
   const draft = await salesperson1.writeEmail(
     state.product,
     state.strategy,
     state.similarProducts || [],
-    feedback
+    feedback,
+    feedback ? previousDraft : undefined
   )
 
   console.log('[PromotionTeam] Salesperson 1 draft subject:', draft.subject)
 
   // Save draft as Markdown
   if (currentOutputDir) {
-    saveDraftAsMarkdown(draft, currentOutputDir)
+    saveDraftAsJson(draft, currentOutputDir)
   }
 
   return {
@@ -207,18 +211,25 @@ export async function salesperson2Node(
   )?.feedback
   const feedback = draftFeedback || state.evaluationResult?.feedback
 
+  // Find previous draft if revision is needed
+  const previousDraft = state.emailDrafts
+    .slice()
+    .reverse()
+    .find((d) => d.salespersonId === 'salesperson-emotional')
+
   const draft = await salesperson2.writeEmail(
     state.product,
     state.strategy,
     state.similarProducts || [],
-    feedback
+    feedback,
+    feedback ? previousDraft : undefined
   )
 
   console.log('[PromotionTeam] Salesperson 2 draft subject:', draft.subject)
 
   // Save draft as Markdown
   if (currentOutputDir) {
-    saveDraftAsMarkdown(draft, currentOutputDir)
+    saveDraftAsJson(draft, currentOutputDir)
   }
 
   return {
@@ -247,13 +258,10 @@ export async function evaluatorNode(
   const prevEval = state.evaluationResult
   const prevNeeds = state.needsRevision
 
-  // Check if manager rejected - if so, we need to re-evaluate everything
-  const managerRejected = state.managerReview && !state.managerReview.approved
-
   // Determine which drafts need evaluation
   const draftsToEvaluate = latestDrafts.filter((draft) => {
-    // First evaluation OR manager rejected - evaluate all
-    if (!prevEval || !prevNeeds || managerRejected) {
+    // First evaluation - evaluate all
+    if (!prevEval || !prevNeeds) {
       return true
     }
 
@@ -272,11 +280,6 @@ export async function evaluatorNode(
     }
     return false
   })
-
-  // Log manager rejection scenario
-  if (managerRejected) {
-    console.log('[PromotionTeam] Manager rejected, re-evaluating all drafts')
-  }
 
   console.log(
     `[PromotionTeam] Evaluating ${draftsToEvaluate.length} draft(s):`,
@@ -321,16 +324,20 @@ export async function evaluatorNode(
   }
 
   // Build final result
+  // NEW LOGIC: Approve if ANY draft has score >= 80 (no need for all to pass)
+  const passingDrafts = finalDraftEvaluations.filter((e) => e.score >= 80)
+  const hasPassingDraft = passingDrafts.length > 0
+
   const finalResult = {
     ...newResult,
     draftEvaluations: finalDraftEvaluations,
-    approved: finalDraftEvaluations.every((e) => e.approved),
+    approved: hasPassingDraft, // Approve if at least one is good enough
   }
 
-  // Select best draft from all latest drafts
-  if (finalResult.approved) {
-    // Find highest scoring draft
-    const bestEval = finalDraftEvaluations.reduce((best, curr) =>
+  // Select best draft from passing drafts (or all if none pass)
+  if (hasPassingDraft) {
+    // Find highest scoring draft among passing ones
+    const bestEval = passingDrafts.reduce((best, curr) =>
       curr.score > best.score ? curr : best
     )
     const bestDraft = latestDrafts.find(
@@ -338,6 +345,9 @@ export async function evaluatorNode(
     )
     if (bestDraft) {
       finalResult.selectedDraft = bestDraft
+      console.log(
+        `[PromotionTeam] Selected best draft: ${bestEval.salespersonId} (score: ${bestEval.score})`
+      )
     }
   }
 
@@ -350,9 +360,9 @@ export async function evaluatorNode(
   if (finalDraftEvaluations) {
     finalDraftEvaluations.forEach((e) => {
       console.log(
-        `[PromotionTeam] ${e.salespersonId}: ${e.approved ? 'PASS' : 'FAIL'} (score: ${e.score})`
+        `[PromotionTeam] ${e.salespersonId}: ${e.score >= 80 ? 'PASS' : 'FAIL'} (score: ${e.score})`
       )
-      if (!e.approved && e.feedback) {
+      if (e.score < 80 && e.feedback) {
         console.log(`[PromotionTeam] Feedback: ${e.feedback}`)
       }
     })
@@ -364,20 +374,23 @@ export async function evaluatorNode(
   }
 
   // Determine which salespeople need revision based on individual evaluations
+  // If approved, no one needs revision; otherwise, revise those below 80
   const rational = finalDraftEvaluations.find(
     (e) => e.salespersonId === 'salesperson-rational'
   )
   const emotional = finalDraftEvaluations.find(
     (e) => e.salespersonId === 'salesperson-emotional'
   )
-  const needsRevision = {
-    salesperson1: rational ? !rational.approved : true,
-    salesperson2: emotional ? !emotional.approved : true,
-  }
+  const needsRevision = finalResult.approved
+    ? { salesperson1: false, salesperson2: false }
+    : {
+        salesperson1: rational ? rational.score < 80 : true,
+        salesperson2: emotional ? emotional.score < 80 : true,
+      }
 
   console.log('[PromotionTeam] Needs revision:', needsRevision)
 
-  // Generate HTML if all drafts approved
+  // Generate HTML if approved
   let htmlContent: string | null = null
   if (finalResult.approved && finalResult.selectedDraft && state.product) {
     htmlContent = await evaluator.generateHtml(
@@ -402,7 +415,7 @@ export async function evaluatorNode(
     htmlContent,
     needsRevision,
     currentPhase: finalResult.approved
-      ? WorkflowPhase.MANAGER_REVIEW // Skip to manager review since HTML is generated
+      ? WorkflowPhase.SENDING // Proceed to sending since HTML is generated
       : WorkflowPhase.DRAFTING,
     iterationCount: 1,
   }
@@ -422,112 +435,26 @@ export async function htmlConverterNode(
   }
 
   const draft = state.evaluationResult.selectedDraft
-  const bodyHtml = convertMarkdownToHtml(draft.bodyMarkdown)
-  const fullHtml = createEmailTemplate(
-    draft.subject,
-    bodyHtml,
-    state.product.productUrl,
-    'Shop Now'
-  )
+
+  let fullHtml = ''
+  if (draft.content) {
+    const { renderEmailTemplate } = require('../tools/email-template.tool')
+    fullHtml = renderEmailTemplate(draft.content)
+  } else {
+    const bodyHtml = convertMarkdownToHtml(draft.bodyMarkdown || '')
+    fullHtml = createEmailTemplate(
+      draft.subject,
+      bodyHtml,
+      state.product.productUrl,
+      'Shop Now'
+    )
+  }
 
   console.log('[PromotionTeam] HTML generated, length:', fullHtml.length)
 
   return {
     htmlContent: fullHtml,
-    currentPhase: WorkflowPhase.MANAGER_REVIEW,
-  }
-}
-
-/**
- * Node 4b: HTML Fixer (uses LLM to fix HTML issues based on manager feedback)
- * Called when manager rejects for format/content issues
- */
-export async function htmlFixerNode(
-  state: PromotionTeamState
-): Promise<Partial<PromotionTeamState>> {
-  console.log('[PromotionTeam] Fixing HTML based on manager feedback...')
-
-  if (!state.htmlContent || !state.product) {
-    throw new Error('HTML content and product are required')
-  }
-
-  const feedback = state.managerReview?.feedback || 'Fix HTML issues'
-  const fixedHtml = await evaluator.fixHtml(
-    state.htmlContent,
-    feedback,
-    state.product
-  )
-
-  console.log('[PromotionTeam] HTML fixed, length:', fixedHtml.length)
-
-  // Save fixed HTML version for review/debugging
-  if (currentOutputDir && fixedHtml) {
-    const { filepath, version } = saveHtmlToFile(
-      currentOutputDir,
-      fixedHtml,
-      'email_fixed',
-      true // Create versioned file
-    )
-    console.log(`[PromotionTeam] Fixed HTML saved: ${filepath} (v${version})`)
-  }
-
-  return {
-    htmlContent: fixedHtml,
-    currentPhase: WorkflowPhase.MANAGER_REVIEW,
-    iterationCount: 1,
-  }
-}
-
-/**
- * Node 5: Manager final approval
- * CRITICAL: When manager rejects for content revision, must set needsRevision
- * so salespeople will regenerate their drafts with manager's feedback
- */
-export async function managerReviewNode(
-  state: PromotionTeamState
-): Promise<Partial<PromotionTeamState>> {
-  console.log('[PromotionTeam] Manager reviewing final email...')
-
-  if (!state.htmlContent || !state.product) {
-    throw new Error('HTML content and product are required')
-  }
-
-  // Pass similar products to the review so manager knows what to look for
-  const review = await manager.reviewFinalEmail(
-    state.htmlContent,
-    state.product,
-    state.similarProducts || []
-  )
-
-  console.log(
-    '[PromotionTeam] Manager review:',
-    review.approved ? 'APPROVED' : 'REJECTED'
-  )
-
-  // CRITICAL FIX: When manager requires content revision, set needsRevision
-  // so salespeople will regenerate their drafts with manager's feedback
-  const needsRevision = review.requiresContentRevision
-    ? { salesperson1: true, salesperson2: true }
-    : state.needsRevision
-
-  // Store manager feedback in evaluationResult so salespeople can access it
-  const updatedEvaluationResult =
-    review.requiresContentRevision && state.evaluationResult
-      ? {
-          ...state.evaluationResult,
-          approved: state.evaluationResult.approved, // Preserve the boolean type
-          feedback: review.feedback, // Manager's rejection reason becomes the revision feedback
-        }
-      : state.evaluationResult
-
-  return {
-    managerReview: review,
-    evaluationResult: updatedEvaluationResult,
-    needsRevision,
-    currentPhase: review.approved
-      ? WorkflowPhase.SENDING
-      : WorkflowPhase.EVALUATION,
-    iterationCount: 1,
+    currentPhase: WorkflowPhase.SENDING,
   }
 }
 

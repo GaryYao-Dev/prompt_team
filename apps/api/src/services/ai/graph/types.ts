@@ -9,7 +9,6 @@ import type {
   PromotionStrategy,
   EmailDraft,
   EvaluationResult,
-  ManagerReviewResult,
   WorkflowPhase,
 } from '../agents/types'
 
@@ -60,12 +59,6 @@ export const PromotionTeamAnnotation = Annotation.Root({
 
   // Final HTML content
   htmlContent: Annotation<string | null>({
-    reducer: (_, y) => y,
-    default: () => null,
-  }),
-
-  // Manager review result
-  managerReview: Annotation<ManagerReviewResult | null>({
     reducer: (_, y) => y,
     default: () => null,
   }),

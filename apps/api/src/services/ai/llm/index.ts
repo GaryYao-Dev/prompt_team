@@ -67,8 +67,8 @@ const DEFAULT_CONFIGS: {
   openai: {
     model: 'gpt-4o-mini',
     // temperature: 0.7,
-    maxTokens: 20000,
-    timeout: 120000, // 120 seconds timeout
+    // maxTokens: 20000,
+    timeout: 30000,
   },
   anthropic: {
     model: 'claude-3-sonnet-20240229',

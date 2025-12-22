@@ -43,7 +43,7 @@ export class SalespersonAgent extends BaseAgent {
 
   /**
    * Format similar products for the prompt
-   * Generates the exact price line so LLM doesn't need to compose it
+   * Provides raw product info so LLM can write copy around it
    */
   private formatSimilarProducts(products: ProductInfo[]): string {
     if (!products || products.length === 0) {
@@ -52,23 +52,13 @@ export class SalespersonAgent extends BaseAgent {
 
     return products
       .map((p, i) => {
-        // Generate the exact price line with Markdown formatting
-        let priceLine: string
-        if (p.originalPrice && p.discount) {
-          // Has original price and discount
-          priceLine = `~~$${p.originalPrice.toFixed(2)}~~ **$${p.price.toFixed(2)}** **${p.discount}** [Shop Now](${p.productUrl})`
-        } else if (p.originalPrice) {
-          // Has original price but no discount label
-          priceLine = `~~$${p.originalPrice.toFixed(2)}~~ **$${p.price.toFixed(2)}** [Shop Now](${p.productUrl})`
-        } else {
-          // No discount info
-          priceLine = `**$${p.price.toFixed(2)}** [Shop Now](${p.productUrl})`
-        }
-
         return `${i + 1}. ${p.name}
    - Description: ${p.description}
-   - Image URL: ${p.imageUrl}
-   - PRICE LINE (COPY EXACTLY): ${priceLine}`
+   - Original Price: ${p.originalPrice ? `$${p.originalPrice.toFixed(2)}` : 'N/A'}
+   - Current Price: $${p.price.toFixed(2)}
+   - Discount: ${p.discount || 'None'}
+   - URL: ${p.productUrl}
+   - Image: ${p.imageUrl}`
       })
       .join('\n\n')
   }
@@ -80,11 +70,31 @@ export class SalespersonAgent extends BaseAgent {
     product: ProductInfo,
     strategy: PromotionStrategy,
     similarProducts: ProductInfo[],
-    feedback?: string
+    feedback?: string,
+    previousDraft?: EmailDraft
   ): Promise<EmailDraft> {
-    const feedbackSection = feedback
-      ? `\n\n[REVISION FEEDBACK]\n${feedback}\nPlease optimize the email content based on the above feedback.`
-      : ''
+    const feedbackSection =
+      feedback && previousDraft
+        ? `\n\n[PREVIOUS FAILED DRAFT]
+\`\`\`json
+${JSON.stringify(
+  {
+    subject: previousDraft.subject,
+    content: previousDraft.content,
+  },
+  null,
+  2
+)}
+\`\`\`
+
+[REVISION FEEDBACK]
+The above draft failed evaluation.
+Feedback: "${feedback}"
+CRITICAL: You must IMPROVE based on this feedback. Do not repeat the same mistakes.
+STRICTLY follow the JSON format requirements defined below.`
+        : feedback
+          ? `\n\n[REVISION FEEDBACK]\n${feedback}\nPlease optimize the email content based on the above feedback.`
+          : ''
 
     const similarProductsSection = this.formatSimilarProducts(similarProducts)
 
@@ -111,21 +121,31 @@ ${feedbackSection}
 IMPORTANT REQUIREMENTS:
 1. Write all content in English
 2. Include ALL ${similarProducts.length} recommended products in the email
-3. For each product, use this EXACT format:
-   - Product name as heading (### Product Name)
-   - Brief description (2-3 sentences)
-   - Product image: ![Product Name](Image URL from product data)
-   - COPY THE PRICE LINE EXACTLY as provided in the product data (do NOT modify prices)
-4. Keep the layout clean and scannable
-5. CRITICAL: Use the exact prices provided - DO NOT shorten or round them
-6. NEVER include standalone lines like "Shop the [Product] — $XX.XX" without a full product card
-7. Do NOT promote or link to the purchased product - it is for context only
+3. Do NOT promote or link to the purchased product - it is for context only
+4. Generate content that fits the JSON structure below
 
 Please output in JSON format:
 \`\`\`json
 {
   "subject": "Email subject line",
-  "bodyMarkdown": "Email body content (in Markdown format with product images and links)"
+  "content": {
+    "headline": "Main headline for the email",
+    "introduction": "Engaging introduction paragraphs",
+    "products": [
+      {
+        "name": "Product Name",
+        "description": "Persuasive description for this product (2-3 sentences)",
+        "imageUrl": "Product Image URL (copy exactly from input)",
+        "productUrl": "Product URL (copy exactly from input)",
+        "price": 123.45,
+        "originalPrice": 150.00,
+        "discount": "20% OFF"
+      }
+    ],
+    "outro": "Closing paragraph",
+    "ctaText": "Shop Now",
+    "ctaUrl": "https://www.modafitclub.com"
+  }
 }
 \`\`\``
     )
@@ -133,7 +153,22 @@ Please output in JSON format:
     const response = await this.invoke([message])
     const parsed = this.parseResponse<{
       subject: string
-      bodyMarkdown: string
+      content: {
+        headline: string
+        introduction: string
+        products: Array<{
+          name: string
+          description: string
+          imageUrl: string
+          productUrl: string
+          price: number
+          originalPrice?: number
+          discount?: string
+        }>
+        outro: string
+        ctaText: string
+        ctaUrl: string
+      }
     }>(
       typeof response.content === 'string'
         ? response.content
@@ -141,7 +176,8 @@ Please output in JSON format:
     )
 
     return {
-      ...parsed,
+      subject: parsed.subject,
+      content: parsed.content,
       style: this.style,
       salespersonId: this.salespersonId,
     }
